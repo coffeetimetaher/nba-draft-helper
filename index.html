@@ -223,7 +223,7 @@ function renderStream(d){const L=document.getElementById("list");L.innerHTML="";
   if(!d){L.innerHTML=`<div class="empty">Loading schedule… (needs connection once, then cached offline)</div>`;return;}
   const ago=Math.max(0,Math.round((Date.now()-d.ts)/60000));
   L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Week ${d.ws} to ${d.we} · ${d.total} games · ${ago}m ago${navigator.onLine?'':' · offline'}</div>`);
-  L.insertAdjacentHTML("beforeend",`<div class="pickmark">💳 ~3 adds/week · bank the rest for playoffs (70 season / 5 week)</div>`);
+  L.insertAdjacentHTML("beforeend",`<div class="pickmark">💳 Reg season: 70 total (~3/wk). Playoffs: 5/wk, no cap — stream freely.</div>`);
   L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Your roster · games this week</div>`);
   d.roster.forEach(r=>L.insertAdjacentHTML("beforeend",newsRow(r.name,(r.g<=2?'🔴 '+r.g+' games':(r.g>=4?'🟢 '+r.g+' games':r.g+' games')))));
   L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Top streamers · value × games</div>`);
