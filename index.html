@@ -116,7 +116,7 @@ function needs(){let pr={};CATS.forEach(c=>pr[c]=DATA.keeper_cat[c]);
 function nextAction(srt){
   if(!srt.length)return "";
   const {nd}=needs();const taken=st.drafted.length;
-  const PICKS=[7,18,31,42,55,66,79,90,103,114,127,138,151];
+  const PICKS=[7,18,31,42,55,66,79,90,103,114];
   const next=PICKS.find(n=>n>taken);const three=srt.filter(p=>p.cat["3PM"]>0.5).length;const top=srt[0];
   const fills=p=>nd.filter(c=>p.cat[c]>0.4);
   if(next===undefined)return `Draft done. Best left: ${top.name} #${top.board}.`;
@@ -166,7 +166,7 @@ function render(){
   if(q)rows=rows.filter(p=>p.n.includes(q)||p.n.split(" ").some(w=>w.startsWith(q)));
   if(!rows.length){L.insertAdjacentHTML("beforeend",`<div class="empty">No match.</div>`);return;}
   const taken=st.drafted.length, pickByIdx={};
-  [7,18,31,42,55,66,79,90,103,114,127,138,151].filter(n=>n>taken).forEach(n=>pickByIdx[n-taken]=n);
+  [7,18,31,42,55,66,79,90,103,114].filter(n=>n>taken).forEach(n=>pickByIdx[n-taken]=n);
   let lastTier=null;
   rows.slice(0,80).forEach((p,i)=>{
     if(!q&&pickByIdx[i+1])L.insertAdjacentHTML("beforeend",`<div class="pickmark">⬇ your pick #${pickByIdx[i+1]}</div>`);
