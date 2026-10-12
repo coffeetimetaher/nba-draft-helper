@@ -113,6 +113,18 @@ const avail=()=>P.filter(p=>!st.drafted.includes(p.n));
 function needs(){let pr={};CATS.forEach(c=>pr[c]=DATA.keeper_cat[c]);
   st.mine.forEach(n=>CATS.forEach(c=>pr[c]+=BYN[n].cat[c]));
   let nd=Object.entries(pr).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);return{nd,pr};}
+function nextAction(srt){
+  if(!srt.length)return "";
+  const {nd}=needs();const taken=st.drafted.length;
+  const PICKS=[7,18,31,42,55,66,79,90,103,114,127,138,151];
+  const next=PICKS.find(n=>n>taken);const three=srt.filter(p=>p.cat["3PM"]>0.5).length;const top=srt[0];
+  const fills=p=>nd.filter(c=>p.cat[c]>0.4);
+  if(next===undefined)return `Draft done. Best left: ${top.name} #${top.board}.`;
+  const until=next-1-taken;
+  if(until<=0){const f=fills(top);return `⬇ YOUR PICK (#${next}): take <b>${top.name}</b> #${top.board}${f.length?' · fills '+f.join(','):''}`;}
+  const land=srt[until]||srt[srt.length-1];const tierLeft=srt.filter(p=>p.tier===top.tier).length;const lf=fills(land);
+  let warn="";if(tierLeft<=2)warn=` · ⛰️ ${top.name} last in tier — likely gone`;else if(three<=10)warn=` · ⚠️ 3PM thin (${three})`;
+  return `Turn in <b>${until}</b> (pick #${next}). Chalk lands you: <b>${land.name}</b> #${land.board}${lf.length?' ('+lf.join(',')+')':''}${warn}`;}
 function act(n,mine){let p=BYN[n];if(!p||st.drafted.includes(n))return;
   st.drafted.push(n);st.hist.push({n,mine});if(mine)st.mine.push(n);save();render();}
 function undo(){let h=st.hist.pop();if(!h)return;st.drafted=st.drafted.filter(x=>x!==h.n);
@@ -126,11 +138,10 @@ function render(){
   // needs chips
   document.getElementById("needs").innerHTML=CATS.map(c=>`<span class="chip ${nd.includes(c)?'need':''}">${c}</span>`).join("");
   // cliff
-  const srt=av.sort((a,b)=>a.board-b.board);
+  const srt=av.slice().sort((a,b)=>a.board-b.board);
   const cb=document.getElementById("cliff");
-  if(srt.length){const t=srt[0].tier,same=srt.filter(p=>p.tier===t).length;
-    if(same<=3){cb.classList.add("cliff");cb.textContent=`⛰️ Tier cliff — only ${same} left in the top tier. Grab if it fits.`;}
-    else cb.classList.remove("cliff");}
+  const na=nextAction(srt);
+  if(na){cb.classList.add("cliff");cb.innerHTML=na;}else cb.classList.remove("cliff");
   // list
   const q=norm(document.getElementById("q").value);
   const L=document.getElementById("list"); L.innerHTML="";
