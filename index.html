@@ -80,6 +80,7 @@ h1{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:600;letter-spaci
   <div class="tabs">
     <div class="tab on" data-v="board" id="tBoard">Best available</div>
     <div class="tab" data-v="mine" id="tMine">My team</div>
+    <div class="tab" data-v="news" id="tNews">News</div>
   </div>
 </header>
 <div id="list"></div>
@@ -126,6 +127,7 @@ function render(){
   // list
   const q=norm(document.getElementById("q").value);
   const L=document.getElementById("list"); L.innerHTML="";
+  if(view==="news"){renderNews(JSON.parse(localStorage.getItem("news_v1")||"null"));return;}
   if(view==="mine"){
     const {pr}=needs();
     const cg=document.createElement("div");cg.className="catgrid";
@@ -167,10 +169,33 @@ document.getElementById("list").addEventListener("click",e=>{
 document.getElementById("q").addEventListener("input",render);
 document.getElementById("undo").onclick=undo;
 document.getElementById("reset").onclick=()=>{if(confirm("Reset the whole draft?")){st={drafted:[],mine:[],hist:[]};save();render();}};
-function setView(v){view=v;document.getElementById("tBoard").classList.toggle("on",v==="board");
-  document.getElementById("tMine").classList.toggle("on",v==="mine");render();}
+const ESPNB="https://site.api.espn.com/apis/site/v2/sports/basketball/nba";
+const ROTO="https://www.rotowire.com/rss/news.php?sport=NBA";
+function myNames(){const s=new Set((DATA.keepers||[]).map(p=>p.n));st.mine.forEach(n=>s.add(n));return s;}
+function newsRow(t,sub,src){return `<div class="row"><div class="mid"><div class="nm">${t}</div>${sub?`<div class="sub">${sub}${src?' · '+src:''}</div>`:''}</div></div>`;}
+function renderNews(d){const L=document.getElementById("list");L.innerHTML="";
+  if(!d){L.innerHTML=`<div class="empty">Loading news… (needs connection once, then cached offline)</div>`;return;}
+  const ago=Math.max(0,Math.round((Date.now()-d.ts)/60000));
+  L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Your players · ${ago}m ago${navigator.onLine?'':' · offline'}</div>`);
+  if(d.roster&&d.roster.length)d.roster.forEach(r=>L.insertAdjacentHTML("beforeend",newsRow(r.name,(r.note?'📝 '+r.note:'🏥 '+r.status),r.src)));
+  else L.insertAdjacentHTML("beforeend",`<div class="empty">No news on your players.</div>`);
+  if(d.alerts&&d.alerts.length){L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Injury alerts · board (don't add)</div>`);d.alerts.slice(0,8).forEach(a=>L.insertAdjacentHTML("beforeend",newsRow('#'+a.board+' '+a.name,'🏥 '+a.status)));}
+  if(d.notes&&d.notes.length){L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Beat notes · available</div>`);d.notes.slice(0,10).forEach(n=>L.insertAdjacentHTML("beforeend",newsRow('#'+n.board+' '+n.name,'📝 '+n.note)));}
+  if(d.scores&&d.scores.length){L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Scores</div>`);d.scores.forEach(s=>L.insertAdjacentHTML("beforeend",newsRow(s.name,s.st)));}
+  if(d.heads&&d.heads.length){L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Headlines</div>`);d.heads.forEach(h=>L.insertAdjacentHTML("beforeend",newsRow(h,'')));}}
+async function fetchNews(){const o={ts:Date.now(),roster:[],alerts:[],notes:[],scores:[],heads:[]};const mn=myNames();
+  try{const j=await fetch(ESPNB+"/injuries").then(r=>r.json());(j.injuries||[]).forEach(t=>(t.injuries||[]).forEach(i=>{const a=i.athlete||{};const nm=norm(a.displayName||"");const s2=i.status||"";
+    if(mn.has(nm))o.roster.push({name:a.displayName,status:s2});else if(/out/i.test(s2)&&BYN[nm]&&BYN[nm].board<=120)o.alerts.push({name:a.displayName,status:s2,board:BYN[nm].board});}));}catch(e){}
+  try{const j=await fetch(ESPNB+"/scoreboard").then(r=>r.json());(j.events||[]).slice(0,12).forEach(e=>o.scores.push({name:e.name,st:((e.status||{}).type||{}).shortDetail||""}));}catch(e){}
+  try{const j=await fetch(ESPNB+"/news").then(r=>r.json());(j.articles||[]).slice(0,6).forEach(a=>o.heads.push(a.headline||""));}catch(e){}
+  try{const x=await fetch(ROTO).then(r=>r.text());const doc=new DOMParser().parseFromString(x,"text/xml");[...doc.querySelectorAll("item")].slice(0,40).forEach(it=>{const ti=(it.querySelector("title")||{}).textContent||"";const nmR=ti.split(":")[0].trim();const pn=norm(nmR);const note=ti.split(":").slice(1).join(":").trim();
+    if(mn.has(pn))o.roster.push({name:nmR,note:note,src:"RW"});else if(BYN[pn]&&BYN[pn].board<=120)o.notes.push({name:nmR,board:BYN[pn].board,note:note});});}catch(e){}
+  localStorage.setItem("news_v1",JSON.stringify(o));if(view==="news")renderNews(o);}
+function setView(v){view=v;["Board","Mine","News"].forEach(x=>document.getElementById("t"+x).classList.toggle("on",v===x.toLowerCase()));
+  render();if(v==="news"&&navigator.onLine)fetchNews();}
 document.getElementById("tBoard").onclick=()=>setView("board");
 document.getElementById("tMine").onclick=()=>setView("mine");
+document.getElementById("tNews").onclick=()=>setView("news");
 render();
 </script>
 <script>if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
