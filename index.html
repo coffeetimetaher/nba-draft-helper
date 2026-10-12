@@ -125,8 +125,11 @@ function nextAction(srt){
   const land=srt[until]||srt[srt.length-1];const tierLeft=srt.filter(p=>p.tier===top.tier).length;const lf=fills(land);
   let warn="";if(tierLeft<=2)warn=` · ⛰️ ${top.name} last in tier — likely gone`;else if(three<=10)warn=` · ⚠️ 3PM thin (${three})`;
   return `Turn in <b>${until}</b> (pick #${next}). Chalk lands you: <b>${land.name}</b> #${land.board}${lf.length?' ('+lf.join(',')+')':''}${warn}`;}
-function dynScore(p,pr,med){let b=0;CATS.forEach(c=>{b+=(med-pr[c])*p.cat[c];});return p.board-2.0*b;}
-function dynSort(list){const {pr}=needs();const med=Object.values(pr).reduce((a,b)=>a+b,0)/CATS.length;return list.slice().sort((a,b)=>dynScore(a,pr,med)-dynScore(b,pr,med));}
+function dynScore(p,pr,med,ci){let b=0;CATS.forEach(c=>{b+=(med-pr[c])*p.cat[c];});let s=p.board-2.0*b;
+  if(ci>=0&&p.odds&&p.odds[ci+1]!=null)s-=18*(1-p.odds[ci+1]);return s;}
+function dynSort(list){const {pr}=needs();const med=Object.values(pr).reduce((a,b)=>a+b,0)/CATS.length;
+  const ci=[7,18,31,42,55,66,79,90,103,114].findIndex(n=>n>st.drafted.length);
+  return list.slice().sort((a,b)=>dynScore(a,pr,med,ci)-dynScore(b,pr,med,ci));}
 function act(n,mine){let p=BYN[n];if(!p||st.drafted.includes(n))return;
   st.drafted.push(n);st.hist.push({n,mine});if(mine)st.mine.push(n);save();render();}
 function undo(){let h=st.hist.pop();if(!h)return;st.drafted=st.drafted.filter(x=>x!==h.n);
