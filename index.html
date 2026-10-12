@@ -83,9 +83,10 @@ h1{font-size:15px;margin:0 0 8px;color:var(--muted);font-weight:600;letter-spaci
   <div class="needs" id="needs"></div>
   <input class="search" id="q" placeholder="Search player… (name or initials)" autocomplete="off" autocapitalize="off">
   <div class="tabs">
-    <div class="tab on" data-v="board" id="tBoard">Best available</div>
-    <div class="tab" data-v="mine" id="tMine">My team</div>
+    <div class="tab on" data-v="board" id="tBoard">Board</div>
+    <div class="tab" data-v="mine" id="tMine">Team</div>
     <div class="tab" data-v="news" id="tNews">News</div>
+    <div class="tab" data-v="stream" id="tStream">Stream</div>
   </div>
 </header>
 <div id="list"></div>
@@ -134,6 +135,7 @@ function render(){
   const q=norm(document.getElementById("q").value);
   const L=document.getElementById("list"); L.innerHTML="";
   if(view==="news"){renderNews(JSON.parse(localStorage.getItem("news_v1")||"null"));return;}
+  if(view==="stream"){renderStream(JSON.parse(localStorage.getItem("stream_v1")||"null"));return;}
   if(view==="mine"){
     const {pr}=needs();
     const cg=document.createElement("div");cg.className="catgrid";
@@ -203,11 +205,36 @@ async function fetchNews(){const o={ts:Date.now(),roster:[],alerts:[],notes:[],s
   try{const x=await fetch(ROTO).then(r=>r.text());const doc=new DOMParser().parseFromString(x,"text/xml");[...doc.querySelectorAll("item")].slice(0,40).forEach(it=>{const ti=(it.querySelector("title")||{}).textContent||"";const nmR=ti.split(":")[0].trim();const pn=norm(nmR);const note=ti.split(":").slice(1).join(":").trim();
     if(mn.has(pn))o.roster.push({name:nmR,note:note,src:"RW"});else if(BYN[pn]&&BYN[pn].board<=120)o.notes.push({name:nmR,board:BYN[pn].board,note:note});});}catch(e){}
   localStorage.setItem("news_v1",JSON.stringify(o));if(view==="news")renderNews(o);}
-function setView(v){view=v;["Board","Mine","News"].forEach(x=>document.getElementById("t"+x).classList.toggle("on",v===x.toLowerCase()));
-  render();if(v==="news"&&navigator.onLine)fetchNews();}
+const BBM2ESPN={SAS:"SA",PHO:"PHX",GSW:"GS",NYK:"NY",NOP:"NO",NOR:"NO",WAS:"WSH",UTA:"UTAH"};
+function weekStart(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day);d.setHours(0,0,0,0);return d;}
+function ymd(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0");}
+function pgval(p,nd){return Object.values(p.cat).reduce((a,b)=>a+b,0)+0.6*nd.reduce((a,c)=>a+(p.cat[c]||0),0);}
+function tg(team,g){return g[BBM2ESPN[team]||team]||0;}
+async function fetchStream(){const ws=weekStart();const we=new Date(ws);we.setDate(we.getDate()+6);const g={};
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(d.getDate()+i);
+    try{const j=await fetch(ESPNB+"/scoreboard?dates="+ymd(d)).then(r=>r.json());(j.events||[]).forEach(e=>e.competitions[0].competitors.forEach(c=>{const a=c.team.abbreviation;g[a]=(g[a]||0)+1;}));}catch(e){}}
+  const {nd}=needs();const mn=myNames();
+  const roster=[...(DATA.keepers||[]),...st.mine.map(n=>BYN[n])].filter(Boolean).map(p=>({name:p.name,g:tg(p.team,g)})).sort((a,b)=>b.g-a.g);
+  const cand=DATA.players.filter(p=>!mn.has(p.n)&&tg(p.team,g)>0).map(p=>({p,gm:tg(p.team,g)})).map(x=>({...x,s:pgval(x.p,nd)*x.gm})).sort((a,b)=>b.s-a.s).slice(0,15);
+  const o={ts:Date.now(),ws:ws.toISOString().slice(0,10),we:we.toISOString().slice(0,10),total:Object.values(g).reduce((a,b)=>a+b,0),roster,
+    cand:cand.map(x=>({name:x.p.name,board:x.p.board,team:x.p.team,pos:x.p.pos,g:x.gm,up:(x.p.up||[]),fills:nd.filter(c=>x.p.cat[c]>0.4),fade:x.p.fade?x.p.fade.tier:null}))};
+  localStorage.setItem("stream_v1",JSON.stringify(o));if(view==="stream")renderStream(o);}
+function renderStream(d){const L=document.getElementById("list");L.innerHTML="";
+  if(!d){L.innerHTML=`<div class="empty">Loading schedule… (needs connection once, then cached offline)</div>`;return;}
+  const ago=Math.max(0,Math.round((Date.now()-d.ts)/60000));
+  L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Week ${d.ws} to ${d.we} · ${d.total} games · ${ago}m ago${navigator.onLine?'':' · offline'}</div>`);
+  L.insertAdjacentHTML("beforeend",`<div class="pickmark">💳 ~3 adds/week · bank the rest for playoffs (70 season / 5 week)</div>`);
+  L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Your roster · games this week</div>`);
+  d.roster.forEach(r=>L.insertAdjacentHTML("beforeend",newsRow(r.name,(r.g<=2?'🔴 '+r.g+' games':(r.g>=4?'🟢 '+r.g+' games':r.g+' games')))));
+  L.insertAdjacentHTML("beforeend",`<div class="tierhdr">Top streamers · value × games</div>`);
+  d.cand.forEach(c=>{const up=c.up.map(x=>x+'+').join(' ');const fade=c.fade?' · '+c.fade:'';const fl=c.fills.length?' · fills '+c.fills.join(','):'';
+    L.insertAdjacentHTML("beforeend",newsRow('#'+c.board+' '+c.name,'🗓 '+c.g+'g · '+c.team+' '+c.pos+(up?' · '+up:'')+fl+fade));});}
+function setView(v){view=v;["Board","Mine","News","Stream"].forEach(x=>document.getElementById("t"+x).classList.toggle("on",v===x.toLowerCase()));
+  render();if(v==="news"&&navigator.onLine)fetchNews();if(v==="stream"&&navigator.onLine)fetchStream();}
 document.getElementById("tBoard").onclick=()=>setView("board");
 document.getElementById("tMine").onclick=()=>setView("mine");
 document.getElementById("tNews").onclick=()=>setView("news");
+document.getElementById("tStream").onclick=()=>setView("stream");
 render();
 </script>
 <script>if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
