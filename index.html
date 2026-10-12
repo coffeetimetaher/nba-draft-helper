@@ -125,6 +125,8 @@ function nextAction(srt){
   const land=srt[until]||srt[srt.length-1];const tierLeft=srt.filter(p=>p.tier===top.tier).length;const lf=fills(land);
   let warn="";if(tierLeft<=2)warn=` · ⛰️ ${top.name} last in tier — likely gone`;else if(three<=10)warn=` · ⚠️ 3PM thin (${three})`;
   return `Turn in <b>${until}</b> (pick #${next}). Chalk lands you: <b>${land.name}</b> #${land.board}${lf.length?' ('+lf.join(',')+')':''}${warn}`;}
+function dynScore(p,pr,med){let b=0;CATS.forEach(c=>{b+=(med-pr[c])*p.cat[c];});return p.board-2.0*b;}
+function dynSort(list){const {pr}=needs();const med=Object.values(pr).reduce((a,b)=>a+b,0)/CATS.length;return list.slice().sort((a,b)=>dynScore(a,pr,med)-dynScore(b,pr,med));}
 function act(n,mine){let p=BYN[n];if(!p||st.drafted.includes(n))return;
   st.drafted.push(n);st.hist.push({n,mine});if(mine)st.mine.push(n);save();render();}
 function undo(){let h=st.hist.pop();if(!h)return;st.drafted=st.drafted.filter(x=>x!==h.n);
@@ -138,7 +140,7 @@ function render(){
   // needs chips
   document.getElementById("needs").innerHTML=CATS.map(c=>`<span class="chip ${nd.includes(c)?'need':''}">${c}</span>`).join("");
   // cliff
-  const srt=av.slice().sort((a,b)=>a.board-b.board);
+  const srt=dynSort(av);
   const cb=document.getElementById("cliff");
   const na=nextAction(srt);
   if(na){cb.classList.add("cliff");cb.innerHTML=na;}else cb.classList.remove("cliff");
@@ -160,7 +162,7 @@ function render(){
     return;
   }
   L.insertAdjacentHTML("beforeend",`<div class="seg"><button class="${boardMode==='me'?'on':''}" data-bm="me">For me</button><button class="${boardMode==='overall'?'on':''}" data-bm="overall">Overall</button></div>`);
-  let rows=boardMode==='overall'?av.slice().sort((a,b)=>a.bbm-b.bbm):av.slice().sort((a,b)=>a.board-b.board);
+  let rows=boardMode==='overall'?av.slice().sort((a,b)=>a.bbm-b.bbm):dynSort(av);
   if(q)rows=rows.filter(p=>p.n.includes(q)||p.n.split(" ").some(w=>w.startsWith(q)));
   if(!rows.length){L.insertAdjacentHTML("beforeend",`<div class="empty">No match.</div>`);return;}
   const taken=st.drafted.length, pickByIdx={};
@@ -168,8 +170,6 @@ function render(){
   let lastTier=null;
   rows.slice(0,80).forEach((p,i)=>{
     if(!q&&pickByIdx[i+1])L.insertAdjacentHTML("beforeend",`<div class="pickmark">⬇ your pick #${pickByIdx[i+1]}</div>`);
-    if(!q&&boardMode==='me'&&p.tier!==lastTier){lastTier=p.tier;
-      const h=document.createElement("div");h.className="tierhdr";h.textContent="Tier "+p.tier;L.appendChild(h);}
     L.appendChild(rowEl(p,false));
   });
 }
