@@ -105,6 +105,8 @@ let st=JSON.parse(localStorage.getItem("draft_v1")||"null")||{drafted:[],mine:[]
 let view="board";
 let boardMode="me";
 const save=()=>localStorage.setItem("draft_v1",JSON.stringify(st));
+if(st.liveCount===undefined)st.liveCount=0;
+const TAKEN=()=>Math.max(st.drafted.length,st.liveCount||0);
 const norm=s=>s.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\.?$/,"").trim();
 function find(q){q=norm(q);if(ALIAS[q])q=norm(ALIAS[q]);if(BYN[q])return BYN[q];
   let h=P.filter(p=>p.n.includes(q));if(!h.length)h=P.filter(p=>q.split(" ").every(w=>p.n.includes(w)));
@@ -116,7 +118,7 @@ function needs(){let pr={};CATS.forEach(c=>pr[c]=DATA.keeper_cat[c]);
   let nd=Object.entries(pr).filter(x=>x[0]!='3PM').sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);return{nd,pr};}
 function nextAction(srt){
   if(!srt.length)return "";
-  const {nd}=needs();const taken=st.drafted.length;
+  const {nd}=needs();const taken=TAKEN();
   const PICKS=[7,18,31,42,55,66,79,90,103,114];
   const next=PICKS.find(n=>n>taken);const three=srt.filter(p=>p.cat["3PM"]>0.5).length;const top=srt[0];
   const fills=p=>nd.filter(c=>p.cat[c]>0.4);
@@ -134,7 +136,7 @@ function dynScore(p,pr,ci,myc){let b=0;CATS.forEach(c=>{if(c=='3PM')return;b+=Ma
   if(ci>=0&&p.odds&&p.odds[ci+1]!=null)s-=18*(1-p.odds[ci+1]);return s;}
 function dynSort(list){const {pr}=needs();const myc={Guard:0,Wing:0,Big:0};
   [...(DATA.keepers||[]),...st.mine.map(n=>BYN[n])].forEach(p=>{if(p)myc[bucketOf(p.pos)]++;});
-  const ci=[7,18,31,42,55,66,79,90,103,114].findIndex(n=>n>st.drafted.length);
+  const ci=[7,18,31,42,55,66,79,90,103,114].findIndex(n=>n>TAKEN());
   return list.slice().sort((a,b)=>dynScore(a,pr,ci,myc)-dynScore(b,pr,ci,myc));}
 function act(n,mine){let p=BYN[n];if(!p||st.drafted.includes(n))return;
   st.drafted.push(n);st.hist.push({n,mine});if(mine)st.mine.push(n);save();render();}
@@ -174,7 +176,7 @@ function render(){
   let rows=boardMode==='overall'?av.slice().sort((a,b)=>a.bbm-b.bbm):dynSort(av);
   if(q)rows=rows.filter(p=>p.n.includes(q)||p.n.split(" ").some(w=>w.startsWith(q)));
   if(!rows.length){L.insertAdjacentHTML("beforeend",`<div class="empty">No match.</div>`);return;}
-  const taken=st.drafted.length, pickByIdx={};
+  const taken=TAKEN(), pickByIdx={};
   [7,18,31,42,55,66,79,90,103,114].filter(n=>n>taken).forEach(n=>pickByIdx[n-taken]=n);
   let lastTier=null;
   rows.slice(0,80).forEach((p,i)=>{
@@ -190,7 +192,7 @@ function rowEl(p,inMine){
   const down=(p.down&&p.down.length)?' · <span class="neg">'+p.down.map(c=>c+'−').join(' ')+'</span>':'';
   let fade='';if(p.fade){const fn=(p.fade.note.match(/top (\d+)/)||[])[1];fade=' · <span class="fade">'+p.fade.tier+(fn?' #'+fn:'')+'</span>';}
   let od='';
-  if(!inMine&&p.odds){const PK=[7,18,31,42,55,66,79,90,103,114];const ni=PK.findIndex(n=>n>st.drafted.length);
+  if(!inMine&&p.odds){const PK=[7,18,31,42,55,66,79,90,103,114];const ni=PK.findIndex(n=>n>TAKEN());
     if(ni>=0){const pr=p.odds[ni];const col=pr>=0.7?'var(--good)':(pr>=0.45?'var(--warn)':'var(--err)');const lab=pr>=0.7?'🟢':(pr>=0.45?'🟡':'🔴');
       od=` · <span style="color:${col};font-weight:700">${lab}${Math.round(pr*100)}%</span>`;}}
   const el=document.createElement("div");el.className="row";
@@ -259,6 +261,21 @@ document.getElementById("tBoard").onclick=()=>setView("board");
 document.getElementById("tMine").onclick=()=>setView("mine");
 document.getElementById("tNews").onclick=()=>setView("news");
 document.getElementById("tStream").onclick=()=>setView("stream");
+async function syncLive(){
+  try{
+    const r=await fetch("draft_live.json?t="+Date.now(),{cache:"no-store"});
+    if(!r.ok)return;
+    const d=await r.json();let ch=false;
+    (d.drafted||[]).forEach(n=>{if(BYN[n]&&!st.drafted.includes(n)){st.drafted.push(n);st.hist.push({n,mine:(d.mine||[]).includes(n),live:true});ch=true;}});
+    (d.mine||[]).forEach(n=>{if(BYN[n]&&!st.mine.includes(n)){st.mine.push(n);ch=true;}});
+    if(st.liveCount!==(d.count||0)){st.liveCount=d.count||0;ch=true;}
+    let ind=document.getElementById("liveInd");
+    if(!ind){ind=document.createElement("div");ind.id="liveInd";ind.style.cssText="position:fixed;top:4px;right:8px;font-size:11px;color:var(--err);font-weight:700;z-index:99";document.body.appendChild(ind);}
+    ind.textContent="🔴 LIVE "+(d.count||0)+" picks";
+    if(ch){save();render();}
+  }catch(e){}
+}
+if(["localhost","127.0.0.1"].includes(location.hostname)){setInterval(syncLive,5000);syncLive();}
 render();
 </script>
 <script>if("serviceWorker"in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));}</script>
