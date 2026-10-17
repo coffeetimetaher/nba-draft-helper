@@ -106,6 +106,7 @@ let view="board";
 let boardMode="me";
 const save=()=>localStorage.setItem("draft_v1",JSON.stringify(st));
 if(st.liveCount===undefined)st.liveCount=0;
+if(!st.punt)st.punt=["3PM"];
 const TAKEN=()=>Math.max(st.drafted.length,st.liveCount||0);
 const norm=s=>s.normalize("NFKD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\b(jr|sr|ii|iii|iv)\.?$/,"").trim();
 function find(q){q=norm(q);if(ALIAS[q])q=norm(ALIAS[q]);if(BYN[q])return BYN[q];
@@ -115,7 +116,7 @@ function find(q){q=norm(q);if(ALIAS[q])q=norm(ALIAS[q]);if(BYN[q])return BYN[q];
 const avail=()=>P.filter(p=>!st.drafted.includes(p.n));
 function needs(){let pr={};CATS.forEach(c=>pr[c]=DATA.keeper_cat[c]);
   st.mine.forEach(n=>CATS.forEach(c=>pr[c]+=BYN[n].cat[c]));
-  let nd=Object.entries(pr).filter(x=>x[0]!='3PM').sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);return{nd,pr};}
+  let nd=Object.entries(pr).filter(x=>!st.punt.includes(x[0])).sort((a,b)=>a[1]-b[1]).slice(0,3).map(x=>x[0]);return{nd,pr};}
 function nextAction(srt){
   if(!srt.length)return "";
   const {nd}=needs();const taken=TAKEN();
@@ -131,7 +132,7 @@ function nextAction(srt){
 const WIN_TARGET=1.5;
 const POS_CAP={Guard:7,Wing:6,Big:2};  // Wemby anchors C → cap extra bigs, force wings/3PM
 function bucketOf(pos){const x=String(pos).split('/')[0];return (x=='PG'||x=='SG')?'Guard':(x=='SF'?'Wing':'Big');}
-function dynScore(p,pr,ci,myc){let b=0;CATS.forEach(c=>{if(c=='3PM')return;b+=Math.max(0,WIN_TARGET-pr[c])*p.cat[c];});let s=p.board-3.5*b;
+function dynScore(p,pr,ci,myc){let b=0;CATS.forEach(c=>{if(st.punt.includes(c))return;b+=Math.max(0,WIN_TARGET-pr[c])*p.cat[c];});let s=p.board-3.5*b;
   const bk=bucketOf(p.pos);if(myc&&myc[bk]>=POS_CAP[bk])s+=14*(myc[bk]-POS_CAP[bk]+1);
   if(ci>=0&&p.odds&&p.odds[ci+1]!=null)s-=18*(1-p.odds[ci+1]);return s;}
 function dynSort(list){const {pr}=needs();const myc={Guard:0,Wing:0,Big:0};
@@ -142,6 +143,7 @@ function act(n,mine){let p=BYN[n];if(!p||st.drafted.includes(n))return;
   st.drafted.push(n);st.hist.push({n,mine});if(mine)st.mine.push(n);save();render();}
 function undo(){let h=st.hist.pop();if(!h)return;st.drafted=st.drafted.filter(x=>x!==h.n);
   if(h.mine)st.mine=st.mine.filter(x=>x!==h.n);save();render();}
+function togglePunt(c){if(c==='TO')return;const i=st.punt.indexOf(c);i<0?st.punt.push(c):st.punt.splice(i,1);save();render();}
 function render(){
   const {nd}=needs(); const av=avail();
   document.getElementById("hAvail").textContent=av.length;
@@ -149,7 +151,7 @@ function render(){
   const three=av.filter(p=>p.cat["3PM"]>0.5).length;
   document.getElementById("h3").textContent=three;
   // needs chips
-  document.getElementById("needs").innerHTML=CATS.map(c=>`<span class="chip ${c=='3PM'?'punt':(nd.includes(c)?'need':'')}">${c}</span>`).join("")+`<span class="chip punt">TO</span>`;
+  document.getElementById("needs").innerHTML=CATS.map(c=>`<span class="chip ${st.punt.includes(c)?'punt':(nd.includes(c)?'need':'')}" title="tap to punt/un-punt" onclick="togglePunt('${c}')">${c}</span>`).join("")+`<span class="chip punt" title="turnovers — punted">TO</span>`;
   // cliff
   const srt=dynSort(av);
   const cb=document.getElementById("cliff");
