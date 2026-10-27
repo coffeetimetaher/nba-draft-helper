@@ -1,0 +1,67 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#F4F2EC"><title>Nile Fantasy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#F4F2EC;--ink:#1C1D1A;--court:#C8641E;--win:#1E6E46;--loss:#B23A2E;--line:#DAD6C9;--mut:#74726A}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Public Sans',system-ui,sans-serif;font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.num,.rec,.sbcols,.d b,.gm{font-feature-settings:'tnum' 1,'lnum' 1}
+.wrap{max-width:680px;margin:0 auto;padding:20px 16px 60px}
+.mast{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2.5px solid var(--ink);padding-bottom:7px}
+.mast .word{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:30px;text-transform:uppercase;letter-spacing:.015em;line-height:1;display:flex;align-items:center;gap:8px}
+.mast .ball{width:13px;height:13px;border-radius:50%;background:var(--court)}
+.mast .date{font-size:13px;color:var(--mut)}
+.sec{margin:30px 0 0}
+.sec h2{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:21px;margin:0 0 7px;letter-spacing:.01em;display:flex;align-items:baseline;gap:9px}
+.sec h2::before{content:"";width:9px;height:9px;background:var(--court);border-radius:2px;flex:none;transform:translateY(1px)}
+.sec h2 .note{font-weight:400;font-size:12px;color:var(--mut);font-family:'Public Sans'}
+.secbody{border-top:1.5px solid var(--ink);padding-top:4px}
+.sbhead{display:flex;align-items:flex-end;justify-content:space-between;margin:14px 0 10px}
+.sbhead .side{flex:1;font-family:'Barlow Condensed';font-weight:600;font-size:17px;text-transform:uppercase;color:var(--mut)}
+.sbhead .opp{text-align:right}
+.sbhead .rec{font-family:'Barlow Condensed';font-weight:700;font-size:46px;line-height:.85;padding:0 14px;text-align:center}
+.sbhead .rec span{color:var(--court);padding:0 4px}
+.sbhead .rec small{display:block;font-family:'Public Sans';font-weight:400;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;margin-top:4px}
+.sbcols{display:grid;grid-template-columns:1fr 60px 60px;font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.04em;padding-bottom:5px;border-bottom:1px solid var(--line)}
+.sbcols span:not(:first-child){text-align:right}
+.srow{display:grid;grid-template-columns:1fr 60px 60px;align-items:baseline;padding:8px 0 8px 9px;border-bottom:1px solid var(--line);border-left:3px solid transparent}
+.srow .cat{font-weight:600}
+.srow .num{font-family:'Barlow Condensed';font-weight:600;font-size:22px;text-align:right;color:var(--mut)}
+.srow .num.lead{font-weight:700;color:var(--ink)}
+.srow .num.me.win{color:var(--win)} .srow .num.me.loss{color:var(--loss)} .srow .num.me.close{color:var(--court)}
+.srow.close{border-left-color:var(--court)}
+.srow.punt{opacity:.5}
+.srow.punt .cat::after{content:" punt";font-size:10px;color:var(--mut);font-weight:400;text-transform:uppercase;letter-spacing:.04em}
+.fine{font-size:11.5px;color:var(--mut);margin:10px 0 0}
+.inj{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:baseline;padding:9px 0;border-bottom:1px solid var(--line)}
+.chip{font-family:'Barlow Condensed';font-weight:700;font-size:12px;padding:2px 7px 1px;border-radius:3px;text-transform:uppercase;letter-spacing:.03em;color:var(--paper)}
+.chip.out{background:var(--loss)} .chip.gtd{background:var(--court)}
+.inj .who{font-weight:600} .inj .det{color:var(--mut);font-size:13px;text-align:right}
+.week{display:flex;gap:6px;margin:12px 0 16px}
+.d{flex:1;text-align:center;padding:7px 2px;border:1px solid var(--line);border-radius:4px}
+.d span{display:block;font-family:'Barlow Condensed';font-weight:600;font-size:11px;text-transform:uppercase;color:var(--mut)}
+.d b{font-family:'Barlow Condensed';font-weight:700;font-size:19px;color:var(--mut)}
+.d.open{border-color:var(--court);background:rgba(200,100,30,.07)} .d.open b{color:var(--court)}
+.st{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--line)}
+.st .who{font-weight:600} .st .pos{color:var(--mut);font-size:12px}
+.st .gm{font-family:'Barlow Condensed';font-weight:700;color:var(--court);font-size:15px;text-align:right}
+.st .pct{grid-column:1/-1;color:var(--mut);font-size:12px}
+.dateline{font-weight:600;font-size:14px;margin:12px 0 2px;font-style:italic}
+.subhead{font-family:'Barlow Condensed';font-weight:600;font-size:16px;color:var(--court);margin:14px 0 4px}
+ul.beat{list-style:none;margin:0;padding:0}
+ul.beat li{position:relative;padding:7px 0 7px 15px;border-bottom:1px solid var(--line);font-size:14px;line-height:1.45}
+ul.beat li::before{content:"";position:absolute;left:0;top:14px;width:5px;height:5px;background:var(--ink);border-radius:50%}
+.empty{color:var(--mut);font-size:14px;padding:8px 0;margin:0}
+footer{margin-top:34px;padding-top:11px;border-top:2.5px solid var(--ink);font-size:12px;color:var(--mut)}
+</style><link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="apple-touch-icon.png"></head><body><div class="wrap">
+<div class="mast"><div class="word"><span class="ball"></span>Nile Fantasy</div><div class="date">Tuesday, Oct 27</div></div>
+<div class="sec"><h2>The matchup<span class="note">this week</span></h2></div><div class="secbody"><div class="sbhead"><div class="side you">You</div><div class="rec">5<span>&ndash;</span>4<small>projected</small></div><div class="side opp">The Team 11.0</div></div><div class="sbcols"><span></span><span>You</span><span>11.0</span></div><div class="srow close"><span class="cat">PTS</span><span class="num me close">185</span><span class="num op lead">188</span></div><div class="srow loss"><span class="cat">REB</span><span class="num me loss">52</span><span class="num op lead">58</span></div><div class="srow win"><span class="cat">AST</span><span class="num me win lead">43</span><span class="num op">36</span></div><div class="srow close"><span class="cat">STL</span><span class="num me close lead">12</span><span class="num op">11</span></div><div class="srow close"><span class="cat">BLK</span><span class="num me close">7</span><span class="num op lead">7</span></div><div class="srow win"><span class="cat">FG%</span><span class="num me win lead">.499</span><span class="num op">.491</span></div><div class="srow win"><span class="cat">FT%</span><span class="num me win lead">.825</span><span class="num op">.807</span></div><div class="srow punt"><span class="cat">3PM</span><span class="num me punt lead">18</span><span class="num op">17</span></div><div class="srow punt"><span class="cat">TO</span><span class="num me punt">21</span><span class="num op lead">19</span></div><p class="fine">From BBM projections, healthy lineup. Live score when Yahoo lands.</p></div>
+<div class="sec"><h2>Injury report</h2></div><div class="secbody"><div class="inj"><span class="chip out">OUT</span><span class="who">Ivica Zubac</span><span class="det">Injured - ankle sprain (4g) - 11/4/2026</span></div><div class="inj"><span class="chip out">OUT</span><span class="who">Coby White</span><span class="det">Injured - left calf strain (2g) - 10/31/2026</span></div></div>
+<div class="sec"><h2>This week<span class="note">FG/FT-safe, playing your open days</span></h2></div><div class="secbody"><div class="week"><div class="d open"><span>Tue</span><b>5</b></div><div class="d"><span>Wed</span><b>&mdash;</b></div><div class="d open"><span>Thu</span><b>6</b></div><div class="d"><span>Fri</span><b>&mdash;</b></div><div class="d open"><span>Sat</span><b>3</b></div><div class="d open"><span>Sun</span><b>4</b></div></div><div class="st"><span class="who">Luke Kornet</span> <span class="pos">C</span><span class="gm">2G</span><span class="pct">FG +0.94&nbsp;&nbsp;FT +0.06</span></div></div>
+<div class="sec"><h2>Last night</h2></div><div class="secbody"><p class="dateline">Recap digest — (manual episode)</p><p class="subhead">Your players</p><ul class="beat"><li>Devin Booker: Ugly dud: 3 pts on 14% FG, 9 usage, 7 ast, 1 stl. Was top-5 before; usage of 9 is the concern. Calibrate expectations down.</li><li>Dyson Daniels: 4 pts, 0 reb, 4 ast, 1 stl, 28 min, 12 usage, shot poorly. Josh&#x27;s real &#x27;dud of the night.&#x27; Game-to-game variance; will bounce back but won&#x27;t match earlier heaters.</li><li>Ivica Zubac: Out for a period of time, no clear timeline given. Monitor.</li><li>Norman Powell: 20 pts but 0 reb/0 ast; 4 steals (xSteals only 1, luck-aided). Playing well; Josh would trade him for any top-60 return.</li><li>Reed Sheppard: To bench with VanVleet back; 24 min, 13 pts, 4 ast, 2 stl. Minutes only because Marcus Smart out — don&#x27;t buy 24/night as sustainable.</li><li>Gui Santos: Back to starting lineup but only 28 min, 11 usage. Fluctuating Kerr role + sore knee; was most-dropped. Josh won&#x27;t bother holding.</li></ul><p class="subhead">On the wire</p><ul class="beat"><li>Pelle Larsson — 12 pts, 4 ast, 3 stl, 34 min off bench Starter-level minutes off Miami&#x27;s bench; Josh&#x27;s waiver thumbnail guy — just grab him.</li><li>Kris Dunn — playing great (defensive stats) You have to add him with the way he&#x27;s playing.</li><li>Jay Huff — 6 pts, 6 reb, 23 min (0 blk, 0-3 3PT) Category-league add only with Zubac/Nembhard out; capped ~23 min, live off blocks/threes.</li><li>Daniel Gafford — 8 pts, 8 reb, 3 ast, 1 stl, 2 blk, 10 usage Should be on category rosters now (not points); fine when playing center.</li><li>Bobby Portis — 10 pts, 12 reb, 3 threes, 2 blk, 24 min Looks much better; pretty good start — worth a look.</li></ul></div>
+<div class="sec"><h2>Today&#x27;s wire</h2></div><div class="secbody"><p class="dateline">Preview digest — NBA Fantasy Basketball Streaming &amp; Waiver Wire For Monday</p><p class="subhead">Your players</p><ul class="beat"><li>Reed Sheppard: Houston; Van Vleet back, Smart questionable — Monday tests whether his big game sticks. Also at risk of a cut to ~15 min if Eason gets pushed to 30.</li><li>Coby White: Still out (injury); no return timeline given.</li><li>Gui Santos: GSW; questionable, leg injury from last game. Producing very little; Horford/Draymond/Post center lineup shrinks his minutes. Host okay dropping him.</li></ul><p class="subhead">On the wire</p><ul class="beat"><li>Dennis Schroder — 31 min, 16/5/4, ~25 FP, top-85 per game 10-team stream of the day; still available in ~40% of advanced leagues. One stinker (45-pt loss) drags average; easy grab until Coby White returns.</li><li>Pelle Larsson — 30 min avg, 8/4/3/1; 37 min last game Miami minutes trending up with Wiggins benched; sits behind Thompson/Hardaway but closing. 12-team streamer, 29-vs-33 min is the question.</li><li>De&#x27;Anthony Melton — — Listed among 12-team stream options for Monday.</li><li>Aaron Nesmith — — Named 12-team stream; Indiana usage up if Haliburton sits the B2B.</li><li>Mitchell Robinson — — Boston is the only team with a Mon-Tue B2B edge; plays Monday (likely sits Tue). Poor lately but host expects better; rebounds floor.</li><li>Justin Champagnie — ~20+ min, near double-digit rebounds Washington; good player, available everywhere, boosted with teammate (AJ-?) out. Framed 12-team but leans deeper.</li><li>Dereck Lively II — immense defensive (block) numbers Dallas big; Naji Marshall out keeps minutes up even with Kyrie back / Flag maybe back. 10-team stream, not long-term. NOTE: transcript name garbled (&#x27;L Crayon&#x27;/&#x27;Ricochet&#x27;) — verify identity.</li><li>Kasparas Jakucionis — mid-20s min Rookie; been very good, backcourt crossover with Ryan Rollins (not either/or). Possible 14-team add.</li><li>Max Christie — 38 min last game Dallas; heavy minutes but not a strong producer — deep-league stream only.</li><li>Kelly Oubre — — Charlotte; extra usage with players out, though host rates others higher. Deep.</li><li>Sam Hauser — 3 quality games in 5 nights Boston chunk target; schedule avoids the 12-game Wednesday. Deep.</li><li>Robert Williams — 2 quality games in 5 nights Portland; says he wants to play B2Bs. Deep chunk add.</li><li>Trevon Brazile — ~23 min Denver; role shrinks when Cam Johnson / Spencer Jones / Nnaji (&#x27;Dio&#x27;) return. Watch-only, deep. NOTE: transcript name uncertain — verify.</li></ul></div>
+<footer>Updated 11:42 AM from BBM projections. Swaps to live Yahoo data when provisioned.</footer>
+</div></body></html>
